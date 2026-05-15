@@ -1,26 +1,201 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { SignalLights, type SystemStatus } from "@/components/SignalLights";
+import { IngateSystem } from "@/components/IngateSystem";
+import { DroneSurveillance } from "@/components/DroneSurveillance";
+import { Shield, Power } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "SENTRY-ZA — Border Integrity System" },
+      {
+        name: "description",
+        content:
+          "SENTRY-ZA: integrated border control with face-ID checkpoints and drone perimeter surveillance for South Africa.",
+      },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+type Module = "ingate" | "drone";
+
+function Index() {
+  const [systemOn, setSystemOn] = useState(true);
+  const [module, setModule] = useState<Module>("ingate");
+  const [status, setStatus] = useState<SystemStatus>("idle");
+
+  const effectiveStatus: SystemStatus = systemOn ? status : "off";
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="min-h-screen">
+      {/* Header */}
+      <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-bold tracking-wide leading-tight">SENTRY-ZA</h1>
+              <p className="text-[11px] text-muted-foreground font-mono uppercase tracking-widest">
+                Border Integrity Command
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:flex font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              Republic of South Africa · Home Affairs
+            </span>
+            <Button
+              variant={systemOn ? "secondary" : "default"}
+              size="sm"
+              onClick={() => {
+                setSystemOn((s) => !s);
+                setStatus(systemOn ? "off" : "idle");
+              }}
+              className="font-mono tracking-widest"
+            >
+              <Power className="w-4 h-4 mr-1" />
+              {systemOn ? "POWER OFF" : "POWER ON"}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 grid lg:grid-cols-[1fr_320px] gap-6">
+        {/* Main panel */}
+        <div className="space-y-6">
+          {/* Module switcher */}
+          <div className="inline-flex rounded-xl border border-border bg-card p-1">
+            <ModuleTab active={module === "ingate"} onClick={() => setModule("ingate")}>
+              Ingate Checkpoint
+            </ModuleTab>
+            <ModuleTab active={module === "drone"} onClick={() => setModule("drone")}>
+              Drone Perimeter
+            </ModuleTab>
+          </div>
+
+          {!systemOn ? (
+            <div className="rounded-2xl border border-border bg-card/60 p-16 text-center">
+              <Power className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
+              <p className="font-mono uppercase tracking-widest text-muted-foreground">
+                System offline. Power on to begin operations.
+              </p>
+            </div>
+          ) : module === "ingate" ? (
+            <IngateSystem onStatusChange={setStatus} />
+          ) : (
+            <DroneSurveillance onStatusChange={setStatus} />
+          )}
+
+          {/* Mission strip */}
+          <div className="rounded-xl border border-border bg-card/60 p-5">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
+              Mission
+            </div>
+            <p className="text-sm leading-relaxed">
+              SENTRY-ZA reduces illegal immigration by combining biometric verification at official
+              ports of entry with autonomous drone surveillance along unguarded stretches of the
+              border. Lawful travellers pass quickly; unauthorised crossings are flagged in
+              real time.
+            </p>
+          </div>
+        </div>
+
+        {/* Side: signal tower + status */}
+        <aside className="space-y-6">
+          <SignalLights status={effectiveStatus} />
+
+          <div className="rounded-2xl border border-border bg-card/80 backdrop-blur p-5">
+            <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">
+              Current State
+            </h3>
+            <StatusRow label="System" value={systemOn ? "ARMED" : "OFFLINE"} on={systemOn} />
+            <StatusRow
+              label="Decision"
+              value={
+                effectiveStatus === "granted"
+                  ? "ACCESS GRANTED"
+                  : effectiveStatus === "denied"
+                  ? "ACCESS DENIED"
+                  : effectiveStatus === "idle"
+                  ? "STANDBY"
+                  : "—"
+              }
+              tone={
+                effectiveStatus === "granted"
+                  ? "green"
+                  : effectiveStatus === "denied"
+                  ? "red"
+                  : "neutral"
+              }
+            />
+            <StatusRow label="Module" value={module === "ingate" ? "INGATE" : "DRONE GRID"} on />
+          </div>
+        </aside>
+      </div>
+
+      <footer className="border-t border-border mt-8 py-6">
+        <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+          <span>SENTRY-ZA v1.0 · Prototype</span>
+          <span>Secure channel · AES-256</span>
+        </div>
+      </footer>
+    </main>
   );
 }
 
-function Index() {
-  return <PlaceholderIndex />;
+function ModuleTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-colors",
+        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatusRow({
+  label,
+  value,
+  on,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  on?: boolean;
+  tone?: "neutral" | "green" | "red";
+}) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "font-mono text-xs tracking-widest",
+          tone === "green" && "text-signal-green",
+          tone === "red" && "text-signal-red",
+          tone === "neutral" && (on ? "text-foreground" : "text-muted-foreground")
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
 }
