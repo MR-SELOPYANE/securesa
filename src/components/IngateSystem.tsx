@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,55 @@ interface IngateSystemProps {
 export function IngateSystem({ onStatusChange }: IngateSystemProps) {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<Person | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let cancelled = false;
+
+    const startCamera = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError("Camera not supported in this browser.");
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+          },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setCameraReady(true);
+        setCameraError(null);
+      } catch {
+        if (!cancelled) {
+          setCameraError("Camera permission denied or unavailable.");
+        }
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      cancelled = true;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const startScan = () => {
     setScanning(true);
@@ -58,6 +107,28 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
       <div className="grid md:grid-cols-2 gap-6 p-6">
         {/* Face scan window */}
         <div className="relative aspect-square rounded-xl border-2 border-border bg-background overflow-hidden grid-bg">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+              cameraReady ? "opacity-100" : "opacity-0"
+            )}
+          />
+
+          {!cameraReady && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 px-6 text-center">
+              <div>
+                <Fingerprint className="w-10 h-10 mx-auto mb-3 opacity-60 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {cameraError ?? "Starting camera feed…"}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* corner brackets */}
           {[
             "top-3 left-3 border-t-2 border-l-2",
@@ -86,7 +157,7 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
           {scanning && <div className="absolute inset-x-0 top-0 h-24 scan-line" />}
 
           <div className="absolute bottom-3 left-3 right-3 flex justify-between font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
-            <span>CAM 01 · 1080p</span>
+            <span>CAM 01 · {cameraReady ? "LIVE" : "OFFLINE"}</span>
             <span>{scanning ? "SCANNING…" : result ? "CAPTURE COMPLETE" : "READY"}</span>
           </div>
         </div>
@@ -157,9 +228,9 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <dl>
       <dt className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</dt>
       <dd className="font-medium">{value}</dd>
-    </div>
+    </dl>
   );
 }
