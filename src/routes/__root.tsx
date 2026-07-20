@@ -7,6 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 
@@ -72,10 +73,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Vigilant Guardian Light" },
-      { name: "description", content: "Surveillance and Security Management System" },
-      { property: "og:title", content: "Vigilant Guardian Light" },
-      { property: "og:description", content: "Surveillance and Security Management System" },
+      { title: "SENTRY-ZA — Border Integrity Command" },
+      { name: "description", content: "Integrated South African border control: face-ID checkpoints and drone perimeter surveillance." },
+      { property: "og:title", content: "SENTRY-ZA — Border Integrity Command" },
+      { property: "og:description", content: "Integrated South African border control: face-ID checkpoints and drone perimeter surveillance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
