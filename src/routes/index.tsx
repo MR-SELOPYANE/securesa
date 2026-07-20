@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SignalLights, type SystemStatus } from "@/components/SignalLights";
 import { IngateSystem } from "@/components/IngateSystem";
 import { DroneSurveillance } from "@/components/DroneSurveillance";
-import { Shield, Power } from "lucide-react";
+import { ScanHistory } from "@/components/ScanHistory";
+import { OperatorStats } from "@/components/OperatorStats";
+import { Shield, Power, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,23 +23,53 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone";
+type Module = "ingate" | "drone" | "history";
 
 function Index() {
   const [systemOn, setSystemOn] = useState(true);
   const [module, setModule] = useState<Module>("ingate");
   const [status, setStatus] = useState<SystemStatus>("idle");
+  const [kiosk, setKiosk] = useState(false);
 
   const effectiveStatus: SystemStatus = systemOn ? status : "off";
 
+  const toggleKiosk = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setKiosk(true);
+      } else {
+        await document.exitFullscreen();
+        setKiosk(false);
+      }
+    } catch {
+      setKiosk((k) => !k);
+    }
+  };
+
+  useEffect(() => {
+    const onChange = () => setKiosk(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
+      {/* SA flag accent stripe */}
+      <div className="h-1 w-full flex" aria-hidden>
+        <span className="flex-1" style={{ backgroundColor: "var(--sa-green)" }} />
+        <span className="flex-1" style={{ backgroundColor: "var(--sa-gold)" }} />
+        <span className="flex-1" style={{ backgroundColor: "var(--sa-blue)" }} />
+        <span className="flex-1 bg-signal-red" />
+        <span className="flex-1 bg-foreground" />
+      </div>
+
       {/* Header */}
       <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary" />
+              <Shield className="w-5 h-5 text-primary" aria-hidden />
             </div>
             <div>
               <h1 className="font-bold tracking-wide leading-tight">SENTRY-ZA</h1>
@@ -47,10 +79,19 @@ function Index() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:flex font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="hidden md:flex font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               Republic of South Africa · Home Affairs
             </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleKiosk}
+              aria-label={kiosk ? "Exit kiosk mode" : "Enter kiosk mode"}
+              className="font-mono tracking-widest"
+            >
+              {kiosk ? <Minimize2 className="w-4 h-4" aria-hidden /> : <Maximize2 className="w-4 h-4" aria-hidden />}
+            </Button>
             <Button
               variant={systemOn ? "secondary" : "default"}
               size="sm"
@@ -59,8 +100,9 @@ function Index() {
                 setStatus(systemOn ? "off" : "idle");
               }}
               className="font-mono tracking-widest"
+              aria-label={systemOn ? "Power off system" : "Power on system"}
             >
-              <Power className="w-4 h-4 mr-1" />
+              <Power className="w-4 h-4 mr-1" aria-hidden />
               {systemOn ? "POWER OFF" : "POWER ON"}
             </Button>
           </div>
@@ -71,26 +113,31 @@ function Index() {
         {/* Main panel */}
         <div className="space-y-6">
           {/* Module switcher */}
-          <div className="inline-flex rounded-xl border border-border bg-card p-1">
+          <div className="inline-flex flex-wrap rounded-xl border border-border bg-card p-1" role="tablist">
             <ModuleTab active={module === "ingate"} onClick={() => setModule("ingate")}>
               Ingate Checkpoint
             </ModuleTab>
             <ModuleTab active={module === "drone"} onClick={() => setModule("drone")}>
               Drone Perimeter
             </ModuleTab>
+            <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
+              History
+            </ModuleTab>
           </div>
 
           {!systemOn ? (
             <div className="rounded-2xl border border-border bg-card/60 p-16 text-center">
-              <Power className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
+              <Power className="w-10 h-10 mx-auto text-muted-foreground mb-4" aria-hidden />
               <p className="font-mono uppercase tracking-widest text-muted-foreground">
                 System offline. Power on to begin operations.
               </p>
             </div>
           ) : module === "ingate" ? (
             <IngateSystem onStatusChange={setStatus} />
-          ) : (
+          ) : module === "drone" ? (
             <DroneSurveillance onStatusChange={setStatus} />
+          ) : (
+            <ScanHistory />
           )}
 
           {/* Mission strip */}
@@ -107,7 +154,7 @@ function Index() {
           </div>
         </div>
 
-        {/* Side: signal tower + status */}
+        {/* Side: signal tower + status + stats */}
         <aside className="space-y-6">
           <SignalLights status={effectiveStatus} />
 
@@ -135,14 +182,22 @@ function Index() {
                   : "neutral"
               }
             />
-            <StatusRow label="Module" value={module === "ingate" ? "INGATE" : "DRONE GRID"} on />
+            <StatusRow
+              label="Module"
+              value={
+                module === "ingate" ? "INGATE" : module === "drone" ? "DRONE GRID" : "HISTORY"
+              }
+              on
+            />
           </div>
+
+          <OperatorStats />
         </aside>
       </div>
 
       <footer className="border-t border-border mt-8 py-6">
         <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-          <span>SENTRY-ZA v1.0 · Prototype</span>
+          <span>SENTRY-ZA v1.1 · Prototype</span>
           <span>Secure channel · AES-256</span>
         </div>
       </footer>
@@ -161,6 +216,8 @@ function ModuleTab({
 }) {
   return (
     <button
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={cn(
         "px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-colors",
