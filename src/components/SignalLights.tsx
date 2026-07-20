@@ -8,7 +8,8 @@ interface SignalLightsProps {
 
 export function SignalLights({ status }: SignalLightsProps) {
   const powerOn = status !== "off";
-  const yellowOn = status === "idle" || status === "granted" || status === "denied";
+  // Yellow = current flowing / system powered. Always on while the tower has power.
+  const yellowOn = powerOn;
   const greenOn = status === "granted";
   const redOn = status === "denied";
 

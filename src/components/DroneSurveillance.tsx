@@ -1,19 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plane, AlertTriangle, ShieldCheck, Radar } from "lucide-react";
+import { Plane, AlertTriangle, ShieldCheck, Radar, Send } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { SystemStatus } from "./SignalLights";
+import { useDroneAlerts } from "@/lib/history";
+import { beep } from "@/lib/alerts";
 
 interface Contact {
   id: string;
-  x: number; // 0-100 (% inside radar)
+  x: number;
   y: number;
   threat: "clear" | "suspect" | "hostile";
   label: string;
   zone: string;
 }
 
-const ZONES = ["Limpopo Sector", "Beitbridge Buffer", "Kruger Perimeter", "Mozambique Edge", "Lesotho Highlands"];
+// Real South African border sectors along common illegal-crossing corridors.
+const ZONES = [
+  "Beitbridge N (ZW)",
+  "Musina Farmlands",
+  "Kruger East Boundary",
+  "Lebombo Approach (MZ)",
+  "Lesotho Highlands",
+  "Vioolsdrift Corridor (NA)",
+  "Kosi Bay Dunes (MZ)",
+  "Kopfontein West (BW)",
+];
 
 function randomContact(id: number): Contact {
   const r = Math.random();
@@ -43,6 +56,8 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
     Array.from({ length: 5 }, (_, i) => randomContact(i))
   );
   const [selected, setSelected] = useState<Contact | null>(null);
+  const seenHostiles = useRef<Set<string>>(new Set());
+  const { addAlert, alerts, markDispatched } = useDroneAlerts();
 
   useEffect(() => {
     if (!active) return;
@@ -63,12 +78,48 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
     return () => clearInterval(t);
   }, [active]);
 
+  // Auto-alert on newly-appeared hostile contacts.
+  useEffect(() => {
+    if (!active) return;
+    contacts.forEach((c) => {
+      if (c.threat === "hostile" && !seenHostiles.current.has(c.id)) {
+        seenHostiles.current.add(c.id);
+        addAlert({
+          contactId: c.id,
+          zone: c.zone,
+          threat: "hostile",
+          label: c.label,
+          dispatched: false,
+        });
+        beep("hostile");
+        toast.error(`HOSTILE CONTACT · ${c.id}`, {
+          description: `${c.label} · ${c.zone}`,
+        });
+      }
+    });
+  }, [contacts, active, addAlert]);
+
   const handleSelect = (c: Contact) => {
     setSelected(c);
     if (c.threat === "hostile") onStatusChange("denied");
     else if (c.threat === "clear") onStatusChange("granted");
     else onStatusChange("idle");
   };
+
+  const dispatchUnit = () => {
+    if (!selected) return;
+    // find the latest matching alert for this contact
+    const alert = alerts.find((a) => a.contactId === selected.id && !a.dispatched);
+    if (alert) markDispatched(alert.id);
+    beep("info");
+    toast.success(`Ground unit dispatched · ${selected.id}`, {
+      description: `Border Patrol en route to ${selected.zone}`,
+    });
+  };
+
+  const alreadyDispatched = selected
+    ? alerts.some((a) => a.contactId === selected.id && a.dispatched)
+    : false;
 
   const hostiles = contacts.filter((c) => c.threat === "hostile").length;
   const suspects = contacts.filter((c) => c.threat === "suspect").length;
@@ -77,7 +128,7 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
     <div className="rounded-2xl border border-border bg-card/80 backdrop-blur overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/40">
         <div className="flex items-center gap-3">
-          <Plane className="w-5 h-5 text-primary" />
+          <Plane className="w-5 h-5 text-primary" aria-hidden />
           <div>
             <h2 className="font-bold tracking-wide">DRONE GRID — Perimeter Watch</h2>
             <p className="text-xs text-muted-foreground">Unauthorised crossing detection</p>
@@ -98,41 +149,27 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 p-6">
         {/* Radar */}
-        <div className="relative aspect-square rounded-full border-2 border-border bg-background overflow-hidden">
-          {/* rings */}
+        <div className="relative aspect-square rounded-full border-2 border-border bg-background overflow-hidden" aria-label="Drone radar">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
               className="absolute rounded-full border border-border/60"
-              style={{
-                inset: `${i * 10}%`,
-              }}
+              style={{ inset: `${i * 10}%` }}
+              aria-hidden
             />
           ))}
-          {/* crosshairs */}
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border/60" />
-          <div className="absolute left-0 right-0 top-1/2 h-px bg-border/60" />
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border/60" aria-hidden />
+          <div className="absolute left-0 right-0 top-1/2 h-px bg-border/60" aria-hidden />
 
-          {/* sweep */}
-          {active && (
-            <div
-              className="absolute top-1/2 left-1/2 origin-left h-px"
-              style={{
-                width: "50%",
-                background: "linear-gradient(to right, oklch(0.78 0.22 145 / 0.8), transparent)",
-                animation: "spin 4s linear infinite",
-                transformOrigin: "left center",
-              }}
-            />
-          )}
+          {active && <div className="radar-sweep" aria-hidden />}
 
-          {/* contacts */}
           {contacts.map((c) => (
             <button
               key={c.id}
               onClick={() => handleSelect(c)}
               className="absolute -translate-x-1/2 -translate-y-1/2 group"
               style={{ left: `${c.x}%`, top: `${c.y}%` }}
+              aria-label={`Contact ${c.id}, ${c.threat}, ${c.zone}`}
             >
               <div
                 className={cn(
@@ -149,9 +186,8 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
             </button>
           ))}
 
-          {/* center base */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary ring-4 ring-primary/30">
-            <Radar className="w-3 h-3 text-primary-foreground absolute inset-0 m-auto" />
+            <Radar className="w-3 h-3 text-primary-foreground absolute inset-0 m-auto" aria-hidden />
           </div>
         </div>
 
@@ -171,11 +207,11 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   {selected.threat === "hostile" ? (
-                    <AlertTriangle className="w-5 h-5 text-signal-red" />
+                    <AlertTriangle className="w-5 h-5 text-signal-red" aria-hidden />
                   ) : selected.threat === "suspect" ? (
-                    <AlertTriangle className="w-5 h-5 text-signal-yellow" />
+                    <AlertTriangle className="w-5 h-5 text-signal-yellow" aria-hidden />
                   ) : (
-                    <ShieldCheck className="w-5 h-5 text-signal-green" />
+                    <ShieldCheck className="w-5 h-5 text-signal-green" aria-hidden />
                   )}
                   <span className="font-bold">{selected.id}</span>
                   <span
@@ -195,8 +231,19 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
                   Coords: {selected.x.toFixed(1)}°, {selected.y.toFixed(1)}°
                 </div>
                 {selected.threat === "hostile" && (
-                  <div className="rounded border border-signal-red/40 bg-signal-red/10 p-2 text-xs">
-                    Dispatch ground unit. Border Patrol notified.
+                  <div className="space-y-2">
+                    <div className="rounded border border-signal-red/40 bg-signal-red/10 p-2 text-xs">
+                      Border Patrol notified. Awaiting ground unit dispatch.
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={dispatchUnit}
+                      disabled={alreadyDispatched}
+                      className="w-full font-mono text-xs tracking-widest bg-signal-red/90 hover:bg-signal-red text-white"
+                    >
+                      <Send className="w-3 h-3 mr-1" aria-hidden />
+                      {alreadyDispatched ? "UNIT DISPATCHED" : "DISPATCH GROUND UNIT"}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -221,6 +268,7 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
                       c.threat === "suspect" && "bg-signal-yellow",
                       c.threat === "clear" && "bg-signal-green"
                     )}
+                    aria-hidden
                   />
                   <span className="text-muted-foreground">{c.id}</span>
                   <span className="truncate">{c.label}</span>
@@ -231,8 +279,6 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
           </div>
         </div>
       </div>
-
-      <style>{`@keyframes spin { from { transform: translate(0, -50%) rotate(0deg); } to { transform: translate(0, -50%) rotate(360deg); } }`}</style>
     </div>
   );
 }
