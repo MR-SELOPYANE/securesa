@@ -133,18 +133,104 @@
 }
 
 @layer utilities {
+  /* Cinematic radar: full conic sweep with trailing phosphor glow */
   .radar-sweep {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: conic-gradient(
+      from 0deg,
+      oklch(0.78 0.22 145 / 0.55),
+      oklch(0.78 0.22 145 / 0.18) 12%,
+      transparent 28%
+    );
+    animation: radar-spin 4s linear infinite;
+  }
+  .radar-sweep::after {
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
-    height: 1px;
     width: 50%;
-    background: linear-gradient(to right, oklch(0.78 0.22 145 / 0.8), transparent);
+    height: 2px;
+    background: linear-gradient(to right, oklch(0.9 0.24 145), transparent);
     transform-origin: left center;
-    animation: radar-spin 4s linear infinite;
   }
   @keyframes radar-spin {
-    from { transform: translate(0, -50%) rotate(0deg); }
-    to { transform: translate(0, -50%) rotate(360deg); }
+    to { transform: rotate(360deg); }
+  }
+  .radar-blip-ping {
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    animation: blip-ping 4s ease-out infinite;
+  }
+  @keyframes blip-ping {
+    0% { transform: scale(0.4); opacity: 0; }
+    15% { opacity: 0.9; }
+    60% { transform: scale(2.6); opacity: 0; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+
+  /* Simulated camera feed: static noise + scanlines */
+  .cam-noise {
+    background:
+      repeating-linear-gradient(0deg, oklch(0.2 0.02 240 / 0.35) 0 1px, transparent 1px 3px),
+      radial-gradient(circle at 30% 40%, oklch(0.35 0.04 240), oklch(0.12 0.02 240) 75%);
+  }
+  .cam-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(oklch(0.9 0.02 240 / 0.08) 1px, transparent 1px),
+      radial-gradient(oklch(0.9 0.02 240 / 0.06) 1px, transparent 1px);
+    background-size: 3px 3px, 5px 5px;
+    background-position: 0 0, 1px 2px;
+    animation: cam-flicker 0.35s steps(2) infinite;
+  }
+  @keyframes cam-flicker {
+    0% { transform: translate(0, 0); opacity: 1; }
+    50% { transform: translate(1px, -1px); opacity: 0.85; }
+    100% { transform: translate(0, 0); opacity: 1; }
+  }
+  .cam-nvg {
+    filter: hue-rotate(90deg) saturate(1.6) brightness(1.25);
+  }
+  .cam-motion-alert {
+    animation: motion-flash 0.5s ease-in-out infinite;
+  }
+  @keyframes motion-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* Lockdown mode */
+  .lockdown-vignette {
+    background: radial-gradient(circle at center, transparent 30%, oklch(0.45 0.22 27 / 0.45) 100%);
+    animation: lockdown-pulse 1.2s ease-in-out infinite;
+  }
+  .lockdown-panel {
+    box-shadow: 0 0 60px oklch(0.65 0.26 27 / 0.4);
+  }
+  .lockdown-icon {
+    animation: pulse-glow 1s ease-in-out infinite;
+  }
+  @keyframes lockdown-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Boot sequence */
+  .boot-line {
+    animation: boot-line-in 0.15s ease-out;
+  }
+  @keyframes boot-line-in {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .boot-emblem {
+    animation: pulse-glow 2s ease-in-out infinite;
   }
 }

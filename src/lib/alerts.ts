@@ -48,3 +48,43 @@ export function beep(kind: "granted" | "denied" | "hostile" | "info" = "info") {
     osc2.stop(now + 0.5);
   }
 }
+
+/**
+ * Continuous two-tone lockdown siren. Returns a stop function.
+ * Caller must invoke the stop function on cleanup.
+ */
+export function sirenLoop(): () => void {
+  const ac = getCtx();
+  if (!ac) return () => {};
+
+  const gain = ac.createGain();
+  gain.gain.value = 0.06;
+  gain.connect(ac.destination);
+
+  const osc = ac.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.value = 440;
+  osc.connect(gain);
+
+  // Alternate pitch every 600ms for a classic alarm sweep.
+  const lfo = ac.createOscillator();
+  lfo.type = "square";
+  lfo.frequency.value = 0.9;
+  const lfoGain = ac.createGain();
+  lfoGain.gain.value = 180;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc.frequency);
+
+  osc.start();
+  lfo.start();
+
+  return () => {
+    try {
+      osc.stop();
+      lfo.stop();
+      gain.disconnect();
+    } catch {
+      /* already stopped */
+    }
+  };
+}
