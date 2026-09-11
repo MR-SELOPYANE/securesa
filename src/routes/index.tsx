@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SignalLights, type SystemStatus } from "@/components/SignalLights";
 import { IngateSystem } from "@/components/IngateSystem";
 import { DroneSurveillance } from "@/components/DroneSurveillance";
+import { CameraGrid } from "@/components/CameraGrid";
 import { ScanHistory } from "@/components/ScanHistory";
 import { OperatorStats } from "@/components/OperatorStats";
+import { BootSequence } from "@/components/BootSequence";
+import { LockdownOverlay } from "@/components/LockdownOverlay";
 import { Shield, Power, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -23,15 +27,35 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "history";
+type Module = "ingate" | "drone" | "cameras" | "history";
 
 function Index() {
+  const [booted, setBooted] = useState(false);
   const [systemOn, setSystemOn] = useState(true);
   const [module, setModule] = useState<Module>("ingate");
   const [status, setStatus] = useState<SystemStatus>("idle");
   const [kiosk, setKiosk] = useState(false);
+  const [lockdown, setLockdown] = useState<string | null>(null);
 
   const effectiveStatus: SystemStatus = systemOn ? status : "off";
+
+  const handleStatusChange = useCallback(
+    (s: SystemStatus) => {
+      setStatus(s);
+      if (s === "denied" && module === "ingate") {
+        setLockdown("Unauthorised entry attempt at ingate checkpoint. Perimeter barrier sealed pending supervisor review.");
+      }
+    },
+    [module]
+  );
+
+  const standDown = () => {
+    setLockdown(null);
+    setStatus("idle");
+    toast.success("LOCKDOWN LIFTED", {
+      description: "Supervisor override accepted · logged to audit trail",
+    });
+  };
 
   const toggleKiosk = async () => {
     try {
