@@ -79,6 +79,9 @@ function Index() {
 
   return (
     <main className="min-h-dvh">
+      {!booted && <BootSequence onComplete={() => setBooted(true)} />}
+      {lockdown && <LockdownOverlay reason={lockdown} onStandDown={standDown} />}
+
       {/* SA flag accent stripe */}
       <div className="h-1 w-full flex" aria-hidden>
         <span className="flex-1" style={{ backgroundColor: "var(--sa-green)" }} />
@@ -144,6 +147,9 @@ function Index() {
             <ModuleTab active={module === "drone"} onClick={() => setModule("drone")}>
               Drone Perimeter
             </ModuleTab>
+            <ModuleTab active={module === "cameras"} onClick={() => setModule("cameras")}>
+              Camera Wall
+            </ModuleTab>
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
@@ -157,9 +163,11 @@ function Index() {
               </p>
             </div>
           ) : module === "ingate" ? (
-            <IngateSystem onStatusChange={setStatus} />
+            <IngateSystem onStatusChange={handleStatusChange} />
           ) : module === "drone" ? (
-            <DroneSurveillance onStatusChange={setStatus} />
+            <DroneSurveillance onStatusChange={handleStatusChange} />
+          ) : module === "cameras" ? (
+            <CameraGrid />
           ) : (
             <ScanHistory />
           )}
@@ -209,7 +217,13 @@ function Index() {
             <StatusRow
               label="Module"
               value={
-                module === "ingate" ? "INGATE" : module === "drone" ? "DRONE GRID" : "HISTORY"
+                module === "ingate"
+                  ? "INGATE"
+                  : module === "drone"
+                  ? "DRONE GRID"
+                  : module === "cameras"
+                  ? "CAM WALL"
+                  : "HISTORY"
               }
               on
             />
