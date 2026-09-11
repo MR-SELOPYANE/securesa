@@ -149,11 +149,22 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 p-6">
         {/* Radar */}
-        <div className="relative aspect-square rounded-full border-2 border-border bg-background overflow-hidden" aria-label="Drone radar">
+        <div
+          className="relative aspect-square rounded-full border-2 border-primary/30 bg-background overflow-hidden shadow-[0_0_60px_oklch(0.78_0.22_145/0.12)]"
+          aria-label="Drone radar"
+        >
+          {/* Terrain contours */}
+          <svg className="absolute inset-0 w-full h-full opacity-25" viewBox="0 0 100 100" aria-hidden>
+            <path d="M0,72 Q18,64 34,70 T66,66 T100,74" fill="none" stroke="var(--border)" strokeWidth="0.5" />
+            <path d="M0,80 Q22,74 40,79 T72,76 T100,82" fill="none" stroke="var(--border)" strokeWidth="0.4" />
+            <path d="M8,20 Q26,12 44,19 T84,15" fill="none" stroke="var(--border)" strokeWidth="0.4" />
+            <path d="M50,0 Q54,30 48,52 T52,100" fill="none" stroke="var(--primary)" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.6" />
+          </svg>
+
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="absolute rounded-full border border-border/60"
+              className={cn("absolute rounded-full border", i === 4 ? "border-primary/40" : "border-border/60")}
               style={{ inset: `${i * 10}%` }}
               aria-hidden
             />
@@ -167,10 +178,16 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
             <button
               key={c.id}
               onClick={() => handleSelect(c)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 group"
+              className={cn(
+                "absolute -translate-x-1/2 -translate-y-1/2 group",
+                c.threat === "hostile" && "text-signal-red",
+                c.threat === "suspect" && "text-signal-yellow",
+                c.threat === "clear" && "text-signal-green"
+              )}
               style={{ left: `${c.x}%`, top: `${c.y}%` }}
               aria-label={`Contact ${c.id}, ${c.threat}, ${c.zone}`}
             >
+              <span className="radar-blip-ping" aria-hidden />
               <div
                 className={cn(
                   "w-3 h-3 rounded-full ring-4 ring-offset-0 transition-all",
