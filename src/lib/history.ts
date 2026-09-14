@@ -87,38 +87,101 @@ export function useScanHistory() {
   return { scans, addScan, clear };
 }
 
+const ALERT_EVENT = "sentry-za:alerts-changed";
+
+function saveAlerts(next: DroneAlert[]) {
+  save(ALERT_KEY, next);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(ALERT_EVENT));
+}
+
 export function useDroneAlerts() {
   const [alerts, setAlerts] = useState<DroneAlert[]>([]);
 
   useEffect(() => {
-    setAlerts(load<DroneAlert>(ALERT_KEY));
+    const sync = () => setAlerts(load<DroneAlert>(ALERT_KEY));
+    sync();
+    window.addEventListener(ALERT_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(ALERT_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
 
   const addAlert = useCallback((a: Omit<DroneAlert, "id" | "ts">) => {
-    const rec: DroneAlert = { ...a, id: crypto.randomUUID(), ts: Date.now() };
+    const rec: DroneAlert = {
+      stage: "detected",
+      timeline: [{ stage: "detected", ts: Date.now(), by: a.operator ?? "SYSTEM" }],
+      ...a,
+      id: crypto.randomUUID(),
+      ts: Date.now(),
+    };
     setAlerts((prev) => {
       const next = [rec, ...prev];
-      save(ALERT_KEY, next);
+      saveAlerts(next);
       return next;
     });
     return rec;
   }, []);
 
-  const markDispatched = useCallback((id: string) => {
+  const setStage = useCallback((id: string, stage: IncidentStage, by = "SYSTEM") => {
     setAlerts((prev) => {
-      const next = prev.map((a) => (a.id === id ? { ...a, dispatched: true } : a));
-      save(ALERT_KEY, next);
+      const next = prev.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              stage,
+              dispatched: a.dispatched || stage === "dispatched" || stage === "resolved",
+              timeline: [...(a.timeline ?? []), { stage, ts: Date.now(), by }],
+            }
+          : a
+      );
+      saveAlerts(next);
       return next;
     });
   }, []);
 
+  const markDispatched = useCallback(
+    (id: string, by = "SYSTEM") => setStage(id, "dispatched", by),
+    [setStage]
+  );
+
   const clear = useCallback(() => {
     setAlerts([]);
-    save(ALERT_KEY, []);
+    saveAlerts([]);
   }, []);
 
-  return { alerts, addAlert, markDispatched, clear };
+  return { alerts, addAlert, markDispatched, setStage, clear };
 }
+
+export function alertsToCSV(alerts: DroneAlert[]): string {
+  const header = [
+    "timestamp",
+    "contactId",
+    "zone",
+    "threat",
+    "classification",
+    "stage",
+    "operator",
+    "lastUpdate",
+  ];
+  const rows = alerts.map((a) => {
+    const last = a.timeline?.[a.timeline.length - 1];
+    return [
+      new Date(a.ts).toISOString(),
+      a.contactId,
+      a.zone,
+      a.threat,
+      a.label,
+      a.stage ?? (a.dispatched ? "dispatched" : "detected"),
+      a.operator ?? "—",
+      last ? new Date(last.ts).toISOString() : "—",
+    ];
+  });
+  const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  return [header, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+}
+
 
 export function toCSV(scans: ScanRecord[]): string {
   const header = ["timestamp", "station", "name", "nationality", "documentId", "outcome", "reason"];
