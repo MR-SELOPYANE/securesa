@@ -2,6 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 
 export type ScanOutcome = "granted" | "denied";
 
+export type IncidentStage = "detected" | "confirmed" | "dispatched" | "resolved";
+
+export const STAGE_ORDER: IncidentStage[] = ["detected", "confirmed", "dispatched", "resolved"];
+
 export interface ScanRecord {
   id: string;
   ts: number;
@@ -11,6 +15,9 @@ export interface ScanRecord {
   outcome: ScanOutcome;
   reason: string;
   station: string;
+  operator?: string;
+  matchScore?: number;
+  category?: string;
 }
 
 export interface DroneAlert {
@@ -21,10 +28,15 @@ export interface DroneAlert {
   threat: "suspect" | "hostile";
   label: string;
   dispatched: boolean;
+  stage?: IncidentStage;
+  operator?: string;
+  timeline?: { stage: IncidentStage; ts: number; by: string }[];
+  notes?: string;
 }
 
 const SCAN_KEY = "sentry-za.scans.v1";
 const ALERT_KEY = "sentry-za.alerts.v1";
+
 
 function load<T>(key: string): T[] {
   if (typeof window === "undefined") return [];
