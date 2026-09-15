@@ -82,8 +82,10 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
     setScanning(true);
     setResult(null);
     onStatusChange("idle");
+    // Scan duration varies like a real capture.
+    const duration = 1600 + Math.random() * 1600;
     setTimeout(() => {
-      const person = SAMPLE[Math.floor(Math.random() * SAMPLE.length)];
+      const person = generateTraveller();
       setResult(person);
       setScanning(false);
       const outcome = person.status === "valid" ? "granted" : "denied";
@@ -96,20 +98,24 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
         outcome,
         reason: person.reason,
         station,
+        operator: operatorBadge,
+        matchScore: person.matchScore,
+        category: CATEGORY_LABEL[person.category],
       });
 
       beep(outcome);
       if (outcome === "granted") {
         toast.success(`ACCESS GRANTED · ${person.name}`, {
-          description: `${person.nationality} · ${station}`,
+          description: `${person.nationality} · ${station} · ${person.matchScore.toFixed(1)}% match`,
         });
       } else {
         toast.error(`ACCESS DENIED · ${person.name}`, {
           description: `${person.reason} · ${station}`,
         });
       }
-    }, 2200);
+    }, duration);
   };
+
 
   return (
     <div className="rounded-2xl border border-border bg-card/80 backdrop-blur overflow-hidden">
