@@ -5,13 +5,17 @@ import { IngateSystem } from "@/components/IngateSystem";
 import { DroneSurveillance } from "@/components/DroneSurveillance";
 import { CameraGrid } from "@/components/CameraGrid";
 import { ScanHistory } from "@/components/ScanHistory";
+import { IncidentBoard } from "@/components/IncidentBoard";
 import { OperatorStats } from "@/components/OperatorStats";
+import { OperatorSignIn } from "@/components/OperatorSignIn";
 import { BootSequence } from "@/components/BootSequence";
 import { LockdownOverlay } from "@/components/LockdownOverlay";
-import { Shield, Power, Maximize2, Minimize2 } from "lucide-react";
+import { Shield, Power, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useOperator, useClock, formatElapsed, jhbTime, jhbDate } from "@/lib/operator";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
