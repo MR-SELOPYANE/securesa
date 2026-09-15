@@ -184,16 +184,31 @@ export function alertsToCSV(alerts: DroneAlert[]): string {
 
 
 export function toCSV(scans: ScanRecord[]): string {
-  const header = ["timestamp", "station", "name", "nationality", "documentId", "outcome", "reason"];
+  const header = [
+    "timestamp",
+    "station",
+    "operator",
+    "name",
+    "nationality",
+    "documentId",
+    "category",
+    "matchScore",
+    "outcome",
+    "reason",
+  ];
   const rows = scans.map((s) => [
     new Date(s.ts).toISOString(),
     s.station,
+    s.operator ?? "—",
     s.name,
     s.nationality,
     s.docId,
+    s.category ?? "—",
+    s.matchScore != null ? s.matchScore.toFixed(1) : "—",
     s.outcome,
     s.reason,
   ]);
+
   const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
   return [header, ...rows].map((r) => r.map(esc).join(",")).join("\n");
 }

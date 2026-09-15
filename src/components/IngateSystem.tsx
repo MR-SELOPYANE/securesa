@@ -1,27 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2 } from "lucide-react";
+import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { SystemStatus } from "./SignalLights";
 import { useScanHistory } from "@/lib/history";
 import { beep } from "@/lib/alerts";
-
-interface Person {
-  name: string;
-  nationality: string;
-  docId: string;
-  status: "valid" | "invalid";
-  reason: string;
-}
-
-const SAMPLE: Person[] = [
-  { name: "Thandiwe Mokoena", nationality: "South Africa", docId: "ZA-8841-2207", status: "valid", reason: "Citizen ID verified" },
-  { name: "Kwame Asante", nationality: "Ghana", docId: "GH-VISA-44102", status: "valid", reason: "Valid work visa, 2027" },
-  { name: "Unknown Subject", nationality: "Unverified", docId: "—", status: "invalid", reason: "No matching document on file" },
-  { name: "João Silva", nationality: "Mozambique", docId: "MZ-EXP-99812", status: "invalid", reason: "Travel permit expired 2024" },
-  { name: "Aisha Bello", nationality: "Nigeria", docId: "NG-VISA-22018", status: "valid", reason: "Tourist visa valid 30 days" },
-];
+import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
 
 const STATIONS = [
   "Beitbridge (ZW)",
@@ -36,16 +21,18 @@ const STATIONS = [
 
 interface IngateSystemProps {
   onStatusChange: (s: SystemStatus) => void;
+  operatorBadge?: string;
 }
 
-export function IngateSystem({ onStatusChange }: IngateSystemProps) {
+export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: IngateSystemProps) {
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<Person | null>(null);
+  const [result, setResult] = useState<Traveller | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [station, setStation] = useState<string>(STATIONS[0]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addScan } = useScanHistory();
+
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -95,8 +82,10 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
     setScanning(true);
     setResult(null);
     onStatusChange("idle");
+    // Scan duration varies like a real capture.
+    const duration = 1600 + Math.random() * 1600;
     setTimeout(() => {
-      const person = SAMPLE[Math.floor(Math.random() * SAMPLE.length)];
+      const person = generateTraveller();
       setResult(person);
       setScanning(false);
       const outcome = person.status === "valid" ? "granted" : "denied";
@@ -109,20 +98,24 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
         outcome,
         reason: person.reason,
         station,
+        operator: operatorBadge,
+        matchScore: person.matchScore,
+        category: CATEGORY_LABEL[person.category],
       });
 
       beep(outcome);
       if (outcome === "granted") {
         toast.success(`ACCESS GRANTED · ${person.name}`, {
-          description: `${person.nationality} · ${station}`,
+          description: `${person.nationality} · ${station} · ${person.matchScore.toFixed(1)}% match`,
         });
       } else {
         toast.error(`ACCESS DENIED · ${person.name}`, {
           description: `${person.reason} · ${station}`,
         });
       }
-    }, 2200);
+    }, duration);
   };
+
 
   return (
     <div className="rounded-2xl border border-border bg-card/80 backdrop-blur overflow-hidden">
@@ -246,14 +239,67 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
                     </div>
                     <div className="text-lg font-bold">{result.name}</div>
                   </div>
+                  <span
+                    className={cn(
+                      "ml-auto font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border",
+                      result.category === "flagged"
+                        ? "border-signal-red/50 bg-signal-red/15 text-signal-red"
+                        : result.status === "valid"
+                        ? "border-signal-green/40 bg-signal-green/10 text-signal-green"
+                        : "border-signal-yellow/40 bg-signal-yellow/10 text-signal-yellow"
+                    )}
+                  >
+                    {CATEGORY_LABEL[result.category]}
+                  </span>
                 </div>
+
+                {result.watchlist && (
+                  <div className="flex items-center gap-2 rounded-lg border border-signal-red/50 bg-signal-red/10 p-3">
+                    <ShieldAlert className="w-4 h-4 text-signal-red shrink-0" aria-hidden />
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-signal-red">
+                      Watchlist hit — detain and notify SAPS
+                    </span>
+                  </div>
+                )}
 
                 <dl className="grid grid-cols-2 gap-3 text-sm">
                   <Field label="Nationality" value={result.nationality} />
+                  <Field label="Document" value={result.docType} />
                   <Field label="Document ID" value={result.docId} />
-                  <Field label="Match Score" value={result.status === "valid" ? "98.4%" : "—"} />
+                  <Field label="Age / Sex" value={`${result.age} · ${result.sex}`} />
                   <Field label="Station" value={station} />
+                  <Field label="Operator" value={operatorBadge} />
                 </dl>
+
+                <div>
+                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                    <span>Biometric Match</span>
+                    <span
+                      className={cn(
+                        result.matchScore >= 90
+                          ? "text-signal-green"
+                          : result.matchScore >= 70
+                          ? "text-signal-yellow"
+                          : "text-signal-red"
+                      )}
+                    >
+                      {result.matchScore.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-border overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-700",
+                        result.matchScore >= 90
+                          ? "bg-signal-green"
+                          : result.matchScore >= 70
+                          ? "bg-signal-yellow"
+                          : "bg-signal-red"
+                      )}
+                      style={{ width: `${Math.min(100, result.matchScore)}%` }}
+                    />
+                  </div>
+                </div>
 
                 <div className="rounded-lg border border-border bg-card p-3">
                   <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
@@ -261,6 +307,7 @@ export function IngateSystem({ onStatusChange }: IngateSystemProps) {
                   </div>
                   <p className="text-sm">{result.reason}</p>
                 </div>
+
               </div>
             )}
           </div>

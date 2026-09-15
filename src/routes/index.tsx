@@ -5,13 +5,17 @@ import { IngateSystem } from "@/components/IngateSystem";
 import { DroneSurveillance } from "@/components/DroneSurveillance";
 import { CameraGrid } from "@/components/CameraGrid";
 import { ScanHistory } from "@/components/ScanHistory";
+import { IncidentBoard } from "@/components/IncidentBoard";
 import { OperatorStats } from "@/components/OperatorStats";
+import { OperatorSignIn } from "@/components/OperatorSignIn";
 import { BootSequence } from "@/components/BootSequence";
 import { LockdownOverlay } from "@/components/LockdownOverlay";
-import { Shield, Power, Maximize2, Minimize2 } from "lucide-react";
+import { Shield, Power, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useOperator, useClock, formatElapsed, jhbTime, jhbDate } from "@/lib/operator";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -27,7 +31,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "cameras" | "history";
+type Module = "ingate" | "drone" | "cameras" | "incidents" | "history";
 
 function Index() {
   const [booted, setBooted] = useState(false);
@@ -36,8 +40,12 @@ function Index() {
   const [status, setStatus] = useState<SystemStatus>("idle");
   const [kiosk, setKiosk] = useState(false);
   const [lockdown, setLockdown] = useState<string | null>(null);
+  const { operator, loaded, signIn, signOut } = useOperator();
+  const now = useClock();
+  const badge = operator?.badge ?? "UNASSIGNED";
 
   const effectiveStatus: SystemStatus = systemOn ? status : "off";
+
 
   const handleStatusChange = useCallback(
     (s: SystemStatus) => {
@@ -80,7 +88,16 @@ function Index() {
   return (
     <main className="min-h-dvh">
       {!booted && <BootSequence onComplete={() => setBooted(true)} />}
+      {booted && loaded && !operator && (
+        <OperatorSignIn
+          onSignIn={(o) => {
+            signIn(o);
+            toast.success(`SHIFT STARTED · ${o.badge}`, { description: `${o.name} · ${o.rank}` });
+          }}
+        />
+      )}
       {lockdown && <LockdownOverlay reason={lockdown} onStandDown={standDown} />}
+
 
       {/* SA flag accent stripe */}
       <div className="h-1 w-full flex" aria-hidden>
@@ -106,10 +123,42 @@ function Index() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden md:flex font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Republic of South Africa · Home Affairs
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Ops clock */}
+            <div className="hidden sm:block text-right leading-tight">
+              <div className="font-mono text-sm tracking-widest text-primary">{jhbTime(now)}</div>
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                {jhbDate(now)} · SAST
+              </div>
+            </div>
+
+            {/* Operator + shift */}
+            {operator && (
+              <div className="hidden md:block rounded-lg border border-border bg-background/60 px-3 py-1.5 leading-tight">
+                <div className="font-mono text-[11px] tracking-widest">
+                  {operator.badge} · {operator.name}
+                </div>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                  Shift {formatElapsed(operator.shiftStart, now.getTime())} · {operator.rank}
+                </div>
+              </div>
+            )}
+
+            {operator && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  signOut();
+                  toast.message("SHIFT ENDED", { description: `${operator.badge} signed out` });
+                }}
+                aria-label="End shift and sign out"
+                className="font-mono tracking-widest"
+              >
+                <LogOut className="w-4 h-4" aria-hidden />
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -150,6 +199,9 @@ function Index() {
             <ModuleTab active={module === "cameras"} onClick={() => setModule("cameras")}>
               Camera Wall
             </ModuleTab>
+            <ModuleTab active={module === "incidents"} onClick={() => setModule("incidents")}>
+              Incidents
+            </ModuleTab>
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
@@ -163,14 +215,17 @@ function Index() {
               </p>
             </div>
           ) : module === "ingate" ? (
-            <IngateSystem onStatusChange={handleStatusChange} />
+            <IngateSystem onStatusChange={handleStatusChange} operatorBadge={badge} />
           ) : module === "drone" ? (
-            <DroneSurveillance onStatusChange={handleStatusChange} />
+            <DroneSurveillance onStatusChange={handleStatusChange} operatorBadge={badge} />
           ) : module === "cameras" ? (
             <CameraGrid />
+          ) : module === "incidents" ? (
+            <IncidentBoard operatorBadge={badge} />
           ) : (
             <ScanHistory />
           )}
+
 
           {/* Mission strip */}
           <div className="rounded-xl border border-border bg-card/60 p-5">

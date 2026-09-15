@@ -48,9 +48,11 @@ function randomContact(id: number): Contact {
 
 interface DroneSurveillanceProps {
   onStatusChange: (s: SystemStatus) => void;
+  operatorBadge?: string;
 }
 
-export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
+export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED" }: DroneSurveillanceProps) {
+
   const [active, setActive] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>(() =>
     Array.from({ length: 5 }, (_, i) => randomContact(i))
@@ -90,14 +92,16 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
           threat: "hostile",
           label: c.label,
           dispatched: false,
+          stage: "detected",
+          operator: operatorBadge,
         });
         beep("hostile");
         toast.error(`HOSTILE CONTACT · ${c.id}`, {
-          description: `${c.label} · ${c.zone}`,
+          description: `${c.label} · ${c.zone} — logged to Incident Board`,
         });
       }
     });
-  }, [contacts, active, addAlert]);
+  }, [contacts, active, addAlert, operatorBadge]);
 
   const handleSelect = (c: Contact) => {
     setSelected(c);
@@ -108,18 +112,18 @@ export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
 
   const dispatchUnit = () => {
     if (!selected) return;
-    // find the latest matching alert for this contact
-    const alert = alerts.find((a) => a.contactId === selected.id && !a.dispatched);
-    if (alert) markDispatched(alert.id);
+    const alert = alerts.find((a) => a.contactId === selected.id && a.stage !== "resolved");
+    if (alert) markDispatched(alert.id, operatorBadge);
     beep("info");
     toast.success(`Ground unit dispatched · ${selected.id}`, {
-      description: `Border Patrol en route to ${selected.zone}`,
+      description: `Border Patrol en route to ${selected.zone} · ${operatorBadge}`,
     });
   };
 
   const alreadyDispatched = selected
-    ? alerts.some((a) => a.contactId === selected.id && a.dispatched)
+    ? alerts.some((a) => a.contactId === selected.id && (a.dispatched || a.stage === "dispatched"))
     : false;
+
 
   const hostiles = contacts.filter((c) => c.threat === "hostile").length;
   const suspects = contacts.filter((c) => c.threat === "suspect").length;
