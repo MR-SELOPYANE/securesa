@@ -199,6 +199,9 @@ function Index() {
             <ModuleTab active={module === "cameras"} onClick={() => setModule("cameras")}>
               Camera Wall
             </ModuleTab>
+            <ModuleTab active={module === "incidents"} onClick={() => setModule("incidents")}>
+              Incidents
+            </ModuleTab>
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
@@ -212,14 +215,17 @@ function Index() {
               </p>
             </div>
           ) : module === "ingate" ? (
-            <IngateSystem onStatusChange={handleStatusChange} />
+            <IngateSystem onStatusChange={handleStatusChange} operatorBadge={badge} />
           ) : module === "drone" ? (
-            <DroneSurveillance onStatusChange={handleStatusChange} />
+            <DroneSurveillance onStatusChange={handleStatusChange} operatorBadge={badge} />
           ) : module === "cameras" ? (
             <CameraGrid />
+          ) : module === "incidents" ? (
+            <IncidentBoard operatorBadge={badge} />
           ) : (
             <ScanHistory />
           )}
+
 
           {/* Mission strip */}
           <div className="rounded-xl border border-border bg-card/60 p-5">
