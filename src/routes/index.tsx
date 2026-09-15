@@ -88,7 +88,16 @@ function Index() {
   return (
     <main className="min-h-dvh">
       {!booted && <BootSequence onComplete={() => setBooted(true)} />}
+      {booted && loaded && !operator && (
+        <OperatorSignIn
+          onSignIn={(o) => {
+            signIn(o);
+            toast.success(`SHIFT STARTED · ${o.badge}`, { description: `${o.name} · ${o.rank}` });
+          }}
+        />
+      )}
       {lockdown && <LockdownOverlay reason={lockdown} onStandDown={standDown} />}
+
 
       {/* SA flag accent stripe */}
       <div className="h-1 w-full flex" aria-hidden>
