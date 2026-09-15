@@ -48,9 +48,11 @@ function randomContact(id: number): Contact {
 
 interface DroneSurveillanceProps {
   onStatusChange: (s: SystemStatus) => void;
+  operatorBadge?: string;
 }
 
-export function DroneSurveillance({ onStatusChange }: DroneSurveillanceProps) {
+export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED" }: DroneSurveillanceProps) {
+
   const [active, setActive] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>(() =>
     Array.from({ length: 5 }, (_, i) => randomContact(i))
