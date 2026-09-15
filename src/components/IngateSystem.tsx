@@ -1,27 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2 } from "lucide-react";
+import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { SystemStatus } from "./SignalLights";
 import { useScanHistory } from "@/lib/history";
 import { beep } from "@/lib/alerts";
-
-interface Person {
-  name: string;
-  nationality: string;
-  docId: string;
-  status: "valid" | "invalid";
-  reason: string;
-}
-
-const SAMPLE: Person[] = [
-  { name: "Thandiwe Mokoena", nationality: "South Africa", docId: "ZA-8841-2207", status: "valid", reason: "Citizen ID verified" },
-  { name: "Kwame Asante", nationality: "Ghana", docId: "GH-VISA-44102", status: "valid", reason: "Valid work visa, 2027" },
-  { name: "Unknown Subject", nationality: "Unverified", docId: "—", status: "invalid", reason: "No matching document on file" },
-  { name: "João Silva", nationality: "Mozambique", docId: "MZ-EXP-99812", status: "invalid", reason: "Travel permit expired 2024" },
-  { name: "Aisha Bello", nationality: "Nigeria", docId: "NG-VISA-22018", status: "valid", reason: "Tourist visa valid 30 days" },
-];
+import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
 
 const STATIONS = [
   "Beitbridge (ZW)",
@@ -36,16 +21,18 @@ const STATIONS = [
 
 interface IngateSystemProps {
   onStatusChange: (s: SystemStatus) => void;
+  operatorBadge?: string;
 }
 
-export function IngateSystem({ onStatusChange }: IngateSystemProps) {
+export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: IngateSystemProps) {
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<Person | null>(null);
+  const [result, setResult] = useState<Traveller | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [station, setStation] = useState<string>(STATIONS[0]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addScan } = useScanHistory();
+
 
   useEffect(() => {
     let stream: MediaStream | null = null;
