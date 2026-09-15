@@ -239,14 +239,67 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
                     </div>
                     <div className="text-lg font-bold">{result.name}</div>
                   </div>
+                  <span
+                    className={cn(
+                      "ml-auto font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border",
+                      result.category === "flagged"
+                        ? "border-signal-red/50 bg-signal-red/15 text-signal-red"
+                        : result.status === "valid"
+                        ? "border-signal-green/40 bg-signal-green/10 text-signal-green"
+                        : "border-signal-yellow/40 bg-signal-yellow/10 text-signal-yellow"
+                    )}
+                  >
+                    {CATEGORY_LABEL[result.category]}
+                  </span>
                 </div>
+
+                {result.watchlist && (
+                  <div className="flex items-center gap-2 rounded-lg border border-signal-red/50 bg-signal-red/10 p-3">
+                    <ShieldAlert className="w-4 h-4 text-signal-red shrink-0" aria-hidden />
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-signal-red">
+                      Watchlist hit — detain and notify SAPS
+                    </span>
+                  </div>
+                )}
 
                 <dl className="grid grid-cols-2 gap-3 text-sm">
                   <Field label="Nationality" value={result.nationality} />
+                  <Field label="Document" value={result.docType} />
                   <Field label="Document ID" value={result.docId} />
-                  <Field label="Match Score" value={result.status === "valid" ? "98.4%" : "—"} />
+                  <Field label="Age / Sex" value={`${result.age} · ${result.sex}`} />
                   <Field label="Station" value={station} />
+                  <Field label="Operator" value={operatorBadge} />
                 </dl>
+
+                <div>
+                  <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                    <span>Biometric Match</span>
+                    <span
+                      className={cn(
+                        result.matchScore >= 90
+                          ? "text-signal-green"
+                          : result.matchScore >= 70
+                          ? "text-signal-yellow"
+                          : "text-signal-red"
+                      )}
+                    >
+                      {result.matchScore.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-border overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-700",
+                        result.matchScore >= 90
+                          ? "bg-signal-green"
+                          : result.matchScore >= 70
+                          ? "bg-signal-yellow"
+                          : "bg-signal-red"
+                      )}
+                      style={{ width: `${Math.min(100, result.matchScore)}%` }}
+                    />
+                  </div>
+                </div>
 
                 <div className="rounded-lg border border-border bg-card p-3">
                   <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
@@ -254,6 +307,7 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
                   </div>
                   <p className="text-sm">{result.reason}</p>
                 </div>
+
               </div>
             )}
           </div>
