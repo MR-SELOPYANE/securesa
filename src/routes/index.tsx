@@ -123,10 +123,42 @@ function Index() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden md:flex font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Republic of South Africa · Home Affairs
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Ops clock */}
+            <div className="hidden sm:block text-right leading-tight">
+              <div className="font-mono text-sm tracking-widest text-primary">{jhbTime(now)}</div>
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                {jhbDate(now)} · SAST
+              </div>
+            </div>
+
+            {/* Operator + shift */}
+            {operator && (
+              <div className="hidden md:block rounded-lg border border-border bg-background/60 px-3 py-1.5 leading-tight">
+                <div className="font-mono text-[11px] tracking-widest">
+                  {operator.badge} · {operator.name}
+                </div>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                  Shift {formatElapsed(operator.shiftStart, now.getTime())} · {operator.rank}
+                </div>
+              </div>
+            )}
+
+            {operator && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  signOut();
+                  toast.message("SHIFT ENDED", { description: `${operator.badge} signed out` });
+                }}
+                aria-label="End shift and sign out"
+                className="font-mono tracking-widest"
+              >
+                <LogOut className="w-4 h-4" aria-hidden />
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
