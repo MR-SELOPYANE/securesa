@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "cameras" | "history";
+type Module = "ingate" | "drone" | "cameras" | "incidents" | "history";
 
 function Index() {
   const [booted, setBooted] = useState(false);
@@ -40,8 +40,12 @@ function Index() {
   const [status, setStatus] = useState<SystemStatus>("idle");
   const [kiosk, setKiosk] = useState(false);
   const [lockdown, setLockdown] = useState<string | null>(null);
+  const { operator, loaded, signIn, signOut } = useOperator();
+  const now = useClock();
+  const badge = operator?.badge ?? "UNASSIGNED";
 
   const effectiveStatus: SystemStatus = systemOn ? status : "off";
+
 
   const handleStatusChange = useCallback(
     (s: SystemStatus) => {
