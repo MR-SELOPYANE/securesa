@@ -92,14 +92,16 @@ export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED"
           threat: "hostile",
           label: c.label,
           dispatched: false,
+          stage: "detected",
+          operator: operatorBadge,
         });
         beep("hostile");
         toast.error(`HOSTILE CONTACT · ${c.id}`, {
-          description: `${c.label} · ${c.zone}`,
+          description: `${c.label} · ${c.zone} — logged to Incident Board`,
         });
       }
     });
-  }, [contacts, active, addAlert]);
+  }, [contacts, active, addAlert, operatorBadge]);
 
   const handleSelect = (c: Contact) => {
     setSelected(c);
@@ -110,18 +112,18 @@ export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED"
 
   const dispatchUnit = () => {
     if (!selected) return;
-    // find the latest matching alert for this contact
-    const alert = alerts.find((a) => a.contactId === selected.id && !a.dispatched);
-    if (alert) markDispatched(alert.id);
+    const alert = alerts.find((a) => a.contactId === selected.id && a.stage !== "resolved");
+    if (alert) markDispatched(alert.id, operatorBadge);
     beep("info");
     toast.success(`Ground unit dispatched · ${selected.id}`, {
-      description: `Border Patrol en route to ${selected.zone}`,
+      description: `Border Patrol en route to ${selected.zone} · ${operatorBadge}`,
     });
   };
 
   const alreadyDispatched = selected
-    ? alerts.some((a) => a.contactId === selected.id && a.dispatched)
+    ? alerts.some((a) => a.contactId === selected.id && (a.dispatched || a.stage === "dispatched"))
     : false;
+
 
   const hostiles = contacts.filter((c) => c.threat === "hostile").length;
   const suspects = contacts.filter((c) => c.threat === "suspect").length;
