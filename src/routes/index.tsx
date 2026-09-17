@@ -85,18 +85,22 @@ function Index() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  if (booted && loaded && !operator) {
+    return (
+      <OperatorSignIn
+        onSignIn={(o) => {
+          signIn(o);
+          toast.success(`SHIFT STARTED · ${o.badge}`, { description: `${o.name} · ${o.rank}` });
+        }}
+      />
+    );
+  }
+
   return (
     <main className="min-h-dvh">
       {!booted && <BootSequence onComplete={() => setBooted(true)} />}
-      {booted && loaded && !operator && (
-        <OperatorSignIn
-          onSignIn={(o) => {
-            signIn(o);
-            toast.success(`SHIFT STARTED · ${o.badge}`, { description: `${o.name} · ${o.rank}` });
-          }}
-        />
-      )}
       {lockdown && <LockdownOverlay reason={lockdown} onStandDown={standDown} />}
+
 
 
       {/* SA flag accent stripe */}

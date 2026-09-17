@@ -116,29 +116,25 @@ export function useDroneAlerts() {
       id: crypto.randomUUID(),
       ts: Date.now(),
     };
-    setAlerts((prev) => {
-      const next = [rec, ...prev];
-      saveAlerts(next);
-      return next;
-    });
+    const next = [rec, ...load<DroneAlert>(ALERT_KEY)];
+    saveAlerts(next);
+    setAlerts(next);
     return rec;
   }, []);
 
   const setStage = useCallback((id: string, stage: IncidentStage, by = "SYSTEM") => {
-    setAlerts((prev) => {
-      const next = prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              stage,
-              dispatched: a.dispatched || stage === "dispatched" || stage === "resolved",
-              timeline: [...(a.timeline ?? []), { stage, ts: Date.now(), by }],
-            }
-          : a
-      );
-      saveAlerts(next);
-      return next;
-    });
+    const next = load<DroneAlert>(ALERT_KEY).map((a) =>
+      a.id === id
+        ? {
+            ...a,
+            stage,
+            dispatched: a.dispatched || stage === "dispatched" || stage === "resolved",
+            timeline: [...(a.timeline ?? []), { stage, ts: Date.now(), by }],
+          }
+        : a
+    );
+    saveAlerts(next);
+    setAlerts(next);
   }, []);
 
   const markDispatched = useCallback(
@@ -147,9 +143,10 @@ export function useDroneAlerts() {
   );
 
   const clear = useCallback(() => {
-    setAlerts([]);
     saveAlerts([]);
+    setAlerts([]);
   }, []);
+
 
   return { alerts, addAlert, markDispatched, setStage, clear };
 }

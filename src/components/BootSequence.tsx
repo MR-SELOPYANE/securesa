@@ -46,18 +46,18 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
     };
   }, []);
 
+  const completeRef = useRef(onComplete);
+  completeRef.current = onComplete;
+
   useEffect(() => {
     if (lineCount >= BOOT_LINES.length && !done.current) {
       done.current = true;
       setProgress(100);
-      const t1 = setTimeout(() => setFading(true), 700);
-      const t2 = setTimeout(onComplete, 1400);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
+      setTimeout(() => setFading(true), 700);
+      setTimeout(() => completeRef.current(), 1400);
     }
-  }, [lineCount, onComplete]);
+  }, [lineCount]);
+
 
   return (
     <div
