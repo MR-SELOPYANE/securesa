@@ -31,7 +31,7 @@ export function OperatorSignIn({ onSignIn }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur flex items-center justify-center p-6 grid-bg">
+    <div className="fixed inset-0 z-40 bg-background flex items-center justify-center p-6">
       <form
         onSubmit={submit}
         className="w-full max-w-md rounded-2xl border border-primary/30 bg-card/90 p-8 shadow-[0_0_60px_oklch(0.78_0.22_145/0.15)]"
