@@ -34,7 +34,7 @@ export function OperatorSignIn({ onSignIn }: Props) {
     <div className="fixed inset-0 z-40 bg-background flex items-center justify-center p-6">
       <form
         onSubmit={submit}
-        className="w-full max-w-md rounded-2xl border border-primary/30 bg-card/90 p-8 shadow-[0_0_60px_oklch(0.78_0.22_145/0.15)]"
+        className="w-full max-w-md rounded-2xl border border-primary/30 bg-card/90 p-8"
       >
         <div className="flex items-center gap-3 mb-6">
           <div className="w-11 h-11 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center">
@@ -55,7 +55,7 @@ export function OperatorSignIn({ onSignIn }: Props) {
               onChange={(e) => setBadge(e.target.value)}
               placeholder="BMA-4471"
               aria-label="Badge ID"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background font-mono text-sm uppercase tracking-widest outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background font-mono text-sm uppercase tracking-widest outline-none"
             />
           </Field>
 
@@ -65,7 +65,7 @@ export function OperatorSignIn({ onSignIn }: Props) {
               onChange={(e) => setName(e.target.value)}
               placeholder="N. Mokoena"
               aria-label="Officer name"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm outline-none"
             />
           </Field>
 
@@ -74,7 +74,7 @@ export function OperatorSignIn({ onSignIn }: Props) {
               value={rank}
               onChange={(e) => setRank(e.target.value)}
               aria-label="Rank"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:border-primary"
+              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm outline-none"
             >
               {RANKS.map((r) => (
                 <option key={r} value={r}>
