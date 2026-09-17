@@ -55,7 +55,6 @@ export function OperatorSignIn({ onSignIn }: Props) {
               onChange={(e) => setBadge(e.target.value)}
               placeholder="BMA-4471"
               aria-label="Badge ID"
-              autoFocus
               className="w-full px-3 py-2 rounded-lg border border-border bg-background font-mono text-sm uppercase tracking-widest outline-none focus:border-primary"
             />
           </Field>
