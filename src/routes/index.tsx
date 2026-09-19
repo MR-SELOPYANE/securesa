@@ -289,6 +289,10 @@ function Index() {
                   ? "DRONE GRID"
                   : module === "cameras"
                   ? "CAM WALL"
+                  : module === "incidents"
+                  ? "INCIDENTS"
+                  : module === "analytics"
+                  ? "ANALYTICS"
                   : "HISTORY"
               }
               on
