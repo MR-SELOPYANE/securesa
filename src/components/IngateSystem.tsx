@@ -315,9 +315,40 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
                   <p className="text-sm">{result.reason}</p>
                 </div>
 
+                {/* Secondary inspection trigger */}
+                {result.status === "invalid" && !secondaryOpen && (
+                  <Button
+                    onClick={() => setSecondaryOpen(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="w-full font-mono tracking-widest border-signal-yellow/40"
+                  >
+                    <Search className="w-4 h-4 mr-1" aria-hidden />
+                    INITIATE SECONDARY INSPECTION
+                  </Button>
+                )}
               </div>
             )}
           </div>
+
+          {/* Secondary inspection panel */}
+          {needsInspection && (
+            <div className="mt-4">
+              <SecondaryInspection
+                subject={result}
+                station={station}
+                operatorBadge={operatorBadge}
+                onComplete={() => {
+                  setSecondaryOpen(false);
+                  setTimeout(() => {
+                    setResult(null);
+                    onStatusChange("idle");
+                  }, 1500);
+                }}
+                onDismiss={() => setSecondaryOpen(false)}
+              />
+            </div>
+          )}
 
           <Button
             onClick={startScan}
