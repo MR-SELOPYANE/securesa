@@ -208,6 +208,9 @@ function Index() {
             <ModuleTab active={module === "incidents"} onClick={() => setModule("incidents")}>
               Incidents
             </ModuleTab>
+            <ModuleTab active={module === "analytics"} onClick={() => setModule("analytics")}>
+              Analytics
+            </ModuleTab>
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
