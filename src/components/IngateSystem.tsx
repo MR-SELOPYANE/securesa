@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert } from "lucide-react";
+import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { SystemStatus } from "./SignalLights";
 import { useScanHistory } from "@/lib/history";
 import { beep } from "@/lib/alerts";
 import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
+import { SecondaryInspection } from "./SecondaryInspection";
 
 const STATIONS = [
   "Beitbridge (ZW)",
@@ -30,8 +31,11 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [station, setStation] = useState<string>(STATIONS[0]);
+  const [secondaryOpen, setSecondaryOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addScan } = useScanHistory();
+
+  const needsInspection = result && result.status === "invalid" && secondaryOpen;
 
 
   useEffect(() => {
@@ -194,6 +198,9 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
 
           {scanning && <div className="absolute inset-x-0 top-0 h-24 scan-line" aria-hidden />}
 
+          {/* Face landmark biometric overlay */}
+          {scanning && <FaceLandmarkOverlay />}
+
           <div className="absolute bottom-3 left-3 right-3 flex justify-between font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
             <span>CAM 01 · {cameraReady ? "LIVE" : "OFFLINE"}</span>
             <span aria-live="polite">{scanning ? "SCANNING…" : result ? "CAPTURE COMPLETE" : "READY"}</span>
@@ -308,9 +315,40 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
                   <p className="text-sm">{result.reason}</p>
                 </div>
 
+                {/* Secondary inspection trigger */}
+                {result.status === "invalid" && !secondaryOpen && (
+                  <Button
+                    onClick={() => setSecondaryOpen(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="w-full font-mono tracking-widest border-signal-yellow/40"
+                  >
+                    <Search className="w-4 h-4 mr-1" aria-hidden />
+                    INITIATE SECONDARY INSPECTION
+                  </Button>
+                )}
               </div>
             )}
           </div>
+
+          {/* Secondary inspection panel */}
+          {needsInspection && (
+            <div className="mt-4">
+              <SecondaryInspection
+                subject={result}
+                station={station}
+                operatorBadge={operatorBadge}
+                onComplete={() => {
+                  setSecondaryOpen(false);
+                  setTimeout(() => {
+                    setResult(null);
+                    onStatusChange("idle");
+                  }, 1500);
+                }}
+                onDismiss={() => setSecondaryOpen(false)}
+              />
+            </div>
+          )}
 
           <Button
             onClick={startScan}
@@ -333,5 +371,95 @@ function Field({ label, value }: { label: string; value: string }) {
       <dt className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
+  );
+}
+
+// Biometric facial landmark overlay — simulated face-detection mesh
+function FaceLandmarkOverlay() {
+  // Landmark points roughly positioned on a face (percentages of container)
+  const points: { x: number; y: number; delay: number }[] = [
+    { x: 50, y: 28, delay: 0.1 },   // forehead center
+    { x: 42, y: 33, delay: 0.15 },  // left eyebrow
+    { x: 58, y: 33, delay: 0.2 },  // right eyebrow
+    { x: 40, y: 42, delay: 0.25 },  // left eye outer
+    { x: 46, y: 42, delay: 0.3 },   // left eye inner
+    { x: 54, y: 42, delay: 0.35 },  // right eye inner
+    { x: 60, y: 42, delay: 0.4 },   // right eye outer
+    { x: 50, y: 50, delay: 0.45 },  // nose bridge
+    { x: 50, y: 56, delay: 0.5 },   // nose tip
+    { x: 38, y: 55, delay: 0.55 },  // left cheek
+    { x: 62, y: 55, delay: 0.6 },   // right cheek
+    { x: 42, y: 64, delay: 0.65 },  // left mouth corner
+    { x: 50, y: 66, delay: 0.7 },   // mouth center
+    { x: 58, y: 64, delay: 0.75 },  // right mouth corner
+    { x: 50, y: 72, delay: 0.8 },   // chin
+    { x: 30, y: 50, delay: 0.85 }, // left ear
+    { x: 70, y: 50, delay: 0.9 },  // right ear
+  ];
+
+  // Mesh lines connecting key landmarks
+  const lines: { x1: number; y1: number; x2: number; y2: number; delay: number }[] = [
+    { x1: 42, y1: 33, x2: 58, y2: 33, delay: 0.3 },  // eyebrows
+    { x1: 40, y1: 42, x2: 46, y2: 42, delay: 0.35 }, // left eye
+    { x1: 54, y1: 42, x2: 60, y2: 42, delay: 0.4 }, // right eye
+    { x1: 50, y1: 50, x2: 50, y2: 56, delay: 0.5 },  // nose
+    { x1: 42, y1: 64, x2: 58, y2: 64, delay: 0.65 }, // mouth
+    { x1: 38, y1: 55, x2: 62, y2: 55, delay: 0.55 }, // cheeks
+    { x1: 30, y1: 50, x2: 70, y2: 50, delay: 0.85 }, // ear line
+    { x1: 50, y1: 28, x2: 50, y2: 72, delay: 0.3 },  // vertical center
+    { x1: 42, y1: 33, x2: 40, y2: 42, delay: 0.35 }, // brow to eye L
+    { x1: 58, y1: 33, x2: 60, y2: 42, delay: 0.4 }, // brow to eye R
+    { x1: 50, y1: 56, x2: 42, y2: 64, delay: 0.55 }, // nose to mouth L
+    { x1: 50, y1: 56, x2: 58, y2: 64, delay: 0.6 }, // nose to mouth R
+  ];
+
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      {/* Mesh lines */}
+      {lines.map((l, i) => (
+        <line
+          key={`l-${i}`}
+          x1={l.x1}
+          y1={l.y1}
+          x2={l.x2}
+          y2={l.y2}
+          stroke="oklch(0.78 0.22 145 / 0.5)"
+          strokeWidth="0.3"
+          className="face-landmark-line"
+          style={{ animationDelay: `${l.delay}s` }}
+        />
+      ))}
+      {/* Landmark dots */}
+      {points.map((p, i) => (
+        <circle
+          key={`p-${i}`}
+          cx={p.x}
+          cy={p.y}
+          r="0.8"
+          fill="oklch(0.78 0.22 145)"
+          className="face-landmark-dot face-landmark-pulse"
+          style={{ animationDelay: `${p.delay}s` }}
+        />
+      ))}
+      {/* Bounding box */}
+      <rect
+        x="28"
+        y="22"
+        width="44"
+        height="56"
+        rx="8"
+        fill="none"
+        stroke="oklch(0.78 0.22 145 / 0.4)"
+        strokeWidth="0.3"
+        strokeDasharray="2 1.5"
+        className="face-landmark-line"
+        style={{ animationDelay: "0.05s" }}
+      />
+    </svg>
   );
 }

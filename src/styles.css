@@ -233,4 +233,32 @@
   .boot-emblem {
     animation: pulse-glow 2s ease-in-out infinite;
   }
+
+  /* Intel ticker scroll */
+  .intel-scroll {
+    animation: intel-scroll 60s linear infinite;
+  }
+  @keyframes intel-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Face landmark biometric overlay */
+  .face-landmark-dot {
+    animation: landmark-appear 0.3s ease-out backwards;
+  }
+  @keyframes landmark-appear {
+    from { opacity: 0; transform: scale(0); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .face-landmark-line {
+    animation: landmark-appear 0.4s ease-out backwards;
+  }
+  .face-landmark-pulse {
+    animation: landmark-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes landmark-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
 }

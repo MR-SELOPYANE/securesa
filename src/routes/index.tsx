@@ -10,6 +10,8 @@ import { OperatorStats } from "@/components/OperatorStats";
 import { OperatorSignIn } from "@/components/OperatorSignIn";
 import { BootSequence } from "@/components/BootSequence";
 import { LockdownOverlay } from "@/components/LockdownOverlay";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { IntelTicker } from "@/components/IntelTicker";
 import { Shield, Power, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "cameras" | "incidents" | "history";
+type Module = "ingate" | "drone" | "cameras" | "incidents" | "analytics" | "history";
 
 function Index() {
   const [booted, setBooted] = useState(false);
@@ -206,6 +208,9 @@ function Index() {
             <ModuleTab active={module === "incidents"} onClick={() => setModule("incidents")}>
               Incidents
             </ModuleTab>
+            <ModuleTab active={module === "analytics"} onClick={() => setModule("analytics")}>
+              Analytics
+            </ModuleTab>
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
@@ -226,6 +231,8 @@ function Index() {
             <CameraGrid />
           ) : module === "incidents" ? (
             <IncidentBoard operatorBadge={badge} />
+          ) : module === "analytics" ? (
+            <AnalyticsDashboard />
           ) : (
             <ScanHistory />
           )}
@@ -282,6 +289,10 @@ function Index() {
                   ? "DRONE GRID"
                   : module === "cameras"
                   ? "CAM WALL"
+                  : module === "incidents"
+                  ? "INCIDENTS"
+                  : module === "analytics"
+                  ? "ANALYTICS"
                   : "HISTORY"
               }
               on
@@ -292,12 +303,14 @@ function Index() {
         </aside>
       </div>
 
-      <footer className="border-t border-border mt-8 py-6">
+      <footer className="border-t border-border mt-8 py-6 pb-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-          <span>SENTRY-ZA v1.1 · Prototype</span>
+          <span>SENTRY-ZA v1.2 · Prototype</span>
           <span>Secure channel · AES-256</span>
         </div>
       </footer>
+
+      <IntelTicker />
     </main>
   );
 }
