@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert } from "lucide-react";
+import { Fingerprint, ScanFace, FileCheck2, FileX2, Loader2, ShieldAlert, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { SystemStatus } from "./SignalLights";
 import { useScanHistory } from "@/lib/history";
 import { beep } from "@/lib/alerts";
 import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
+import { SecondaryInspection } from "./SecondaryInspection";
 
 const STATIONS = [
   "Beitbridge (ZW)",
