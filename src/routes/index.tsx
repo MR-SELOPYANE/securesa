@@ -303,12 +303,14 @@ function Index() {
         </aside>
       </div>
 
-      <footer className="border-t border-border mt-8 py-6">
+      <footer className="border-t border-border mt-8 py-6 pb-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-          <span>SENTRY-ZA v1.1 · Prototype</span>
+          <span>SENTRY-ZA v1.2 · Prototype</span>
           <span>Secure channel · AES-256</span>
         </div>
       </footer>
+
+      <IntelTicker />
     </main>
   );
 }
