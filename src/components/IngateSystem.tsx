@@ -31,8 +31,11 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [station, setStation] = useState<string>(STATIONS[0]);
+  const [secondaryOpen, setSecondaryOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addScan } = useScanHistory();
+
+  const needsInspection = result && result.status === "invalid" && secondaryOpen;
 
 
   useEffect(() => {
