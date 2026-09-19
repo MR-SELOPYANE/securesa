@@ -33,7 +33,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "cameras" | "incidents" | "history";
+type Module = "ingate" | "drone" | "cameras" | "incidents" | "analytics" | "history";
 
 function Index() {
   const [booted, setBooted] = useState(false);
