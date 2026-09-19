@@ -231,6 +231,8 @@ function Index() {
             <CameraGrid />
           ) : module === "incidents" ? (
             <IncidentBoard operatorBadge={badge} />
+          ) : module === "analytics" ? (
+            <AnalyticsDashboard />
           ) : (
             <ScanHistory />
           )}
