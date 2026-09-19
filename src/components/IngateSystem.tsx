@@ -198,6 +198,9 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
 
           {scanning && <div className="absolute inset-x-0 top-0 h-24 scan-line" aria-hidden />}
 
+          {/* Face landmark biometric overlay */}
+          {scanning && <FaceLandmarkOverlay />}
+
           <div className="absolute bottom-3 left-3 right-3 flex justify-between font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
             <span>CAM 01 · {cameraReady ? "LIVE" : "OFFLINE"}</span>
             <span aria-live="polite">{scanning ? "SCANNING…" : result ? "CAPTURE COMPLETE" : "READY"}</span>
