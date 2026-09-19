@@ -10,6 +10,8 @@ import { OperatorStats } from "@/components/OperatorStats";
 import { OperatorSignIn } from "@/components/OperatorSignIn";
 import { BootSequence } from "@/components/BootSequence";
 import { LockdownOverlay } from "@/components/LockdownOverlay";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { IntelTicker } from "@/components/IntelTicker";
 import { Shield, Power, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
