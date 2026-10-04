@@ -1,0 +1,1 @@
+- Root route has no shellComponent/<html> markup; app is a client-only SPA mounted in #root (nested <html> froze all typing/clicks).
