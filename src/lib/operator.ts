@@ -1,51 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { Profile } from "@/lib/auth";
 
 export interface Operator {
   badge: string;
   name: string;
   rank: string;
+  station: string;
   shiftStart: number;
 }
 
-const KEY = "sentry-za.operator.v1";
+const SHIFT_KEY = "sentry-za.shift-start";
 
-function read(): Operator | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Operator) : null;
-  } catch {
-    return null;
+/** Derives the on-shift operator from the verified, server-side profile. */
+export function operatorFromProfile(p: Profile | null): Operator | null {
+  if (!p || !p.approved) return null;
+  let start = Number(sessionStorage.getItem(SHIFT_KEY));
+  if (!start) {
+    start = Date.now();
+    sessionStorage.setItem(SHIFT_KEY, String(start));
   }
-}
-
-export function useOperator() {
-  const [operator, setOperatorState] = useState<Operator | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setOperatorState(read());
-    setLoaded(true);
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === KEY) setOperatorState(read());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  const signIn = useCallback((o: Omit<Operator, "shiftStart">) => {
-    const rec: Operator = { ...o, shiftStart: Date.now() };
-    window.localStorage.setItem(KEY, JSON.stringify(rec));
-    setOperatorState(rec);
-    return rec;
-  }, []);
-
-  const signOut = useCallback(() => {
-    window.localStorage.removeItem(KEY);
-    setOperatorState(null);
-  }, []);
-
-  return { operator, loaded, signIn, signOut };
+  return { badge: p.badge, name: p.full_name, rank: p.rank, station: p.station, shiftStart: start };
 }
 
 /** Ticking clock; returns a Date updated every second. */
