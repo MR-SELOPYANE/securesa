@@ -1,1 +1,5 @@
 - Root route has no shellComponent/<html> markup; app is a client-only SPA mounted in #root (nested <html> froze all typing/clicks).
+- All records (scans, incidents, audit, settings) live in Lovable Cloud, never localStorage; officer identity, badge and doc masking are stamped by DB triggers from auth.uid() so the client cannot forge them.
+- Privileged writes (role changes, incident stage changes, corrections, purges, settings) go only through SECURITY DEFINER RPCs that check roles server-side; tables have no UPDATE/DELETE grants.
+- audit_log is append-only and SHA-256 hash-chained in a BEFORE INSERT trigger; client logging goes through log_event with an allow-list of action names.
+- Roles live in user_roles (officer/supervisor/admin); the first registered officer is bootstrapped as admin, everyone else needs admin approval.
