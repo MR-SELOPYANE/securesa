@@ -354,6 +354,10 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED", hom
           >
             {scanning ? "SCANNING…" : "INITIATE FACE SCAN"}
           </Button>
+          <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+            POPIA notice: biometrics are processed for Immigration Act verification and are not stored. Only
+            name, nationality, a masked document number and the match score are kept.
+          </p>
         </div>
       </div>
     </div>
