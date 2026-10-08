@@ -12,6 +12,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
+import { logEvent } from "@/lib/auth";
 import { beep } from "@/lib/alerts";
 import type { Traveller } from "@/lib/roster";
 
@@ -71,6 +72,7 @@ export function SecondaryInspection({ subject, station, operatorBadge, onComplet
     toast.success(`SECONDARY INSPECTION COMPLETE`, {
       description: `${subject.name} → ${DISPOSITIONS.find((x) => x.key === d)?.label} · ${operatorBadge}`,
     });
+    logEvent("inspection.disposition", { disposition: d, station }, "scan");
     onComplete(d);
   };
 

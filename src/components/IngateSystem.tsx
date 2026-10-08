@@ -9,28 +9,21 @@ import { beep } from "@/lib/alerts";
 import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
 import { SecondaryInspection } from "./SecondaryInspection";
 
-const STATIONS = [
-  "Beitbridge (ZW)",
-  "Lebombo (MZ)",
-  "Maseru Bridge (LS)",
-  "Ficksburg Bridge (LS)",
-  "Oshoek (SZ)",
-  "Kopfontein (BW)",
-  "Vioolsdrift (NA)",
-  "Kosi Bay (MZ)",
-];
+import { STATIONS } from "@/lib/stations";
 
 interface IngateSystemProps {
   onStatusChange: (s: SystemStatus) => void;
   operatorBadge?: string;
+  homeStation?: string;
+  canChangeStation?: boolean;
 }
 
-export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: IngateSystemProps) {
+export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED", homeStation, canChangeStation = false }: IngateSystemProps) {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<Traveller | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [station, setStation] = useState<string>(STATIONS[0]);
+  const [station, setStation] = useState<string>(homeStation && STATIONS.includes(homeStation) ? homeStation : STATIONS[0]);
   const [secondaryOpen, setSecondaryOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addScan } = useScanHistory();
@@ -105,7 +98,7 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
         operator: operatorBadge,
         matchScore: person.matchScore,
         category: CATEGORY_LABEL[person.category],
-      });
+      }).catch((e) => toast.error("RECORD NOT SAVED", { description: e.message }));
 
       beep(outcome);
       if (outcome === "granted") {
@@ -136,6 +129,8 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
           <select
             value={station}
             onChange={(e) => setStation(e.target.value)}
+            disabled={!canChangeStation}
+            title={canChangeStation ? undefined : "Locked to your home station"}
             aria-label="Border station"
             className="bg-background border border-primary/40 text-primary rounded px-2 py-1 font-mono text-[11px]"
           >
@@ -359,6 +354,10 @@ export function IngateSystem({ onStatusChange, operatorBadge = "UNASSIGNED" }: I
           >
             {scanning ? "SCANNING…" : "INITIATE FACE SCAN"}
           </Button>
+          <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+            POPIA notice: biometrics are processed for Immigration Act verification and are not stored. Only
+            name, nationality, a masked document number and the match score are kept.
+          </p>
         </div>
       </div>
     </div>
