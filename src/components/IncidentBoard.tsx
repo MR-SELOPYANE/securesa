@@ -29,9 +29,10 @@ const STAGE_TONE: Record<IncidentStage, string> = {
 
 interface Props {
   operatorBadge?: string;
+  canExport?: boolean;
 }
 
-export function IncidentBoard({ operatorBadge = "SYSTEM" }: Props) {
+export function IncidentBoard({ operatorBadge = "SYSTEM", canExport = false }: Props) {
   const { alerts, setStage } = useDroneAlerts();
   const [filter, setFilter] = useState<"open" | "all" | IncidentStage>("open");
   const [q, setQ] = useState("");
