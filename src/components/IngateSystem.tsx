@@ -9,16 +9,7 @@ import { beep } from "@/lib/alerts";
 import { generateTraveller, CATEGORY_LABEL, type Traveller } from "@/lib/roster";
 import { SecondaryInspection } from "./SecondaryInspection";
 
-const STATIONS = [
-  "Beitbridge (ZW)",
-  "Lebombo (MZ)",
-  "Maseru Bridge (LS)",
-  "Ficksburg Bridge (LS)",
-  "Oshoek (SZ)",
-  "Kopfontein (BW)",
-  "Vioolsdrift (NA)",
-  "Kosi Bay (MZ)",
-];
+import { STATIONS } from "@/lib/stations";
 
 interface IngateSystemProps {
   onStatusChange: (s: SystemStatus) => void;

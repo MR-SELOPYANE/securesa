@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Download, Trash2, Search, FileCheck2, FileX2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScanHistory, toCSV, downloadCSV } from "@/lib/history";
+import { logEvent } from "@/lib/auth";
 
 type Filter = "all" | "granted" | "denied";
 
-export function ScanHistory() {
-  const { scans, clear } = useScanHistory();
+export function ScanHistory({ canExport = false }: { canExport?: boolean }) {
+  const { scans } = useScanHistory();
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
 
@@ -28,7 +29,8 @@ export function ScanHistory() {
     return { total: scans.length, granted, denied };
   }, [scans]);
 
-  const exportCsv = () => {
+  const exportCsv = async () => {
+    await logEvent("export.scans", { rows: filtered.length });
     downloadCSV(`sentry-za-scans-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(filtered));
   };
 
@@ -46,21 +48,12 @@ export function ScanHistory() {
             variant="secondary"
             size="sm"
             onClick={exportCsv}
-            disabled={filtered.length === 0}
+            disabled={filtered.length === 0 || !canExport}
+            title={canExport ? undefined : "Supervisors only"}
             className="font-mono text-xs tracking-widest"
           >
             <Download className="w-4 h-4 mr-1" aria-hidden />
             EXPORT CSV
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clear}
-            disabled={scans.length === 0}
-            className="font-mono text-xs tracking-widest text-signal-red hover:text-signal-red"
-            aria-label="Clear all history"
-          >
-            <Trash2 className="w-4 h-4" aria-hidden />
           </Button>
         </div>
       </div>

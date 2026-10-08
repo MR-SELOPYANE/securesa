@@ -10,6 +10,7 @@ import {
   type IncidentStage,
   type DroneAlert,
 } from "@/lib/history";
+import { logEvent } from "@/lib/auth";
 import { toast } from "sonner";
 
 const STAGE_LABEL: Record<IncidentStage, string> = {
@@ -31,7 +32,7 @@ interface Props {
 }
 
 export function IncidentBoard({ operatorBadge = "SYSTEM" }: Props) {
-  const { alerts, setStage, clear } = useDroneAlerts();
+  const { alerts, setStage } = useDroneAlerts();
   const [filter, setFilter] = useState<"open" | "all" | IncidentStage>("open");
   const [q, setQ] = useState("");
 
@@ -61,17 +62,19 @@ export function IncidentBoard({ operatorBadge = "SYSTEM" }: Props) {
     const st = stageOf(a);
     const next = STAGE_ORDER[Math.min(STAGE_ORDER.length - 1, STAGE_ORDER.indexOf(st) + 1)];
     if (next === st) return;
-    setStage(a.id, next, operatorBadge);
+    setStage(a.id, next).catch((e) => toast.error(e.message));
     toast.success(`${a.contactId} → ${STAGE_LABEL[next].toUpperCase()}`, {
       description: `${a.zone} · logged by ${operatorBadge}`,
     });
   };
 
-  const exportCsv = () =>
+  const exportCsv = () => {
+    logEvent("export.incidents", { rows: filtered.length });
     downloadCSV(
       `sentry-za-incidents-${new Date().toISOString().slice(0, 10)}.csv`,
       alertsToCSV(filtered)
     );
+  };
 
   return (
     <div className="rounded-2xl border border-border bg-card/80 backdrop-blur overflow-hidden">
@@ -91,21 +94,12 @@ export function IncidentBoard({ operatorBadge = "SYSTEM" }: Props) {
             variant="secondary"
             size="sm"
             onClick={exportCsv}
-            disabled={filtered.length === 0}
+            disabled={filtered.length === 0 || !canExport}
+            title={canExport ? undefined : "Supervisors only"}
             className="font-mono text-xs tracking-widest"
           >
             <Download className="w-4 h-4 mr-1" aria-hidden />
             EXPORT CSV
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clear}
-            disabled={alerts.length === 0}
-            className="font-mono text-xs tracking-widest text-signal-red hover:text-signal-red"
-            aria-label="Clear incident board"
-          >
-            <Trash2 className="w-4 h-4" aria-hidden />
           </Button>
         </div>
       </div>

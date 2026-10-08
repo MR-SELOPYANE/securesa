@@ -91,9 +91,6 @@ export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED"
           zone: c.zone,
           threat: "hostile",
           label: c.label,
-          dispatched: false,
-          stage: "detected",
-          operator: operatorBadge,
         });
         beep("hostile");
         toast.error(`HOSTILE CONTACT · ${c.id}`, {
@@ -113,7 +110,7 @@ export function DroneSurveillance({ onStatusChange, operatorBadge = "UNASSIGNED"
   const dispatchUnit = () => {
     if (!selected) return;
     const alert = alerts.find((a) => a.contactId === selected.id && a.stage !== "resolved");
-    if (alert) markDispatched(alert.id, operatorBadge);
+    if (alert) markDispatched(alert.id).catch(() => {});
     beep("info");
     toast.success(`Ground unit dispatched · ${selected.id}`, {
       description: `Border Patrol en route to ${selected.zone} · ${operatorBadge}`,

@@ -16,7 +16,11 @@ import { Shield, Power, Maximize2, Minimize2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useOperator, useClock, formatElapsed, jhbTime, jhbDate } from "@/lib/operator";
+import { operatorFromProfile, useClock, formatElapsed, jhbTime, jhbDate } from "@/lib/operator";
+import { useAuth, useIdleTimeout, logEvent } from "@/lib/auth";
+import { OfficerRegistration, PendingApproval } from "@/components/OperatorSignIn";
+import { AuditLog } from "@/components/AuditLog";
+import { Compliance } from "@/components/Compliance";
 
 
 export const Route = createFileRoute("/")({
@@ -33,7 +37,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Module = "ingate" | "drone" | "cameras" | "incidents" | "analytics" | "history";
+type Module = "ingate" | "drone" | "cameras" | "incidents" | "analytics" | "history" | "audit" | "compliance";
 
 function Index() {
   const [booted, setBooted] = useState(false);
@@ -42,7 +46,14 @@ function Index() {
   const [status, setStatus] = useState<SystemStatus>("idle");
   const [kiosk, setKiosk] = useState(false);
   const [lockdown, setLockdown] = useState<string | null>(null);
-  const { operator, loaded, signIn, signOut } = useOperator();
+  const auth = useAuth();
+  const { session, profile, isSupervisor, isAdmin } = auth;
+  const operator = operatorFromProfile(profile);
+  const signOut = () => auth.signOut("manual");
+  useIdleTimeout(!!session, () => {
+    auth.signOut("idle");
+    toast.warning("SESSION EXPIRED", { description: "Signed out after 15 minutes of inactivity" });
+  });
   const now = useClock();
   const badge = operator?.badge ?? "UNASSIGNED";
 
@@ -62,6 +73,7 @@ function Index() {
   const standDown = () => {
     setLockdown(null);
     setStatus("idle");
+    logEvent("lockdown.lifted");
     toast.success("LOCKDOWN LIFTED", {
       description: "Supervisor override accepted · logged to audit trail",
     });
@@ -87,15 +99,11 @@ function Index() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  if (booted && loaded && !operator) {
-    return (
-      <OperatorSignIn
-        onSignIn={(o) => {
-          signIn(o);
-          toast.success(`SHIFT STARTED · ${o.badge}`, { description: `${o.name} · ${o.rank}` });
-        }}
-      />
-    );
+  if (booted && !auth.loading) {
+    if (!session) return <OperatorSignIn />;
+    if (!profile) return <OfficerRegistration onDone={auth.refresh} onSignOut={signOut} />;
+    if (!profile.approved)
+      return <PendingApproval profile={profile} onRefresh={auth.refresh} onSignOut={signOut} />;
   }
 
   return (
@@ -214,6 +222,14 @@ function Index() {
             <ModuleTab active={module === "history"} onClick={() => setModule("history")}>
               History
             </ModuleTab>
+            {isSupervisor && (
+              <ModuleTab active={module === "audit"} onClick={() => setModule("audit")}>
+                Audit
+              </ModuleTab>
+            )}
+            <ModuleTab active={module === "compliance"} onClick={() => setModule("compliance")}>
+              POPIA
+            </ModuleTab>
           </div>
 
           {!systemOn ? (
@@ -224,17 +240,21 @@ function Index() {
               </p>
             </div>
           ) : module === "ingate" ? (
-            <IngateSystem onStatusChange={handleStatusChange} operatorBadge={badge} />
+            <IngateSystem onStatusChange={handleStatusChange} operatorBadge={badge} homeStation={operator?.station} canChangeStation={isSupervisor} />
           ) : module === "drone" ? (
             <DroneSurveillance onStatusChange={handleStatusChange} operatorBadge={badge} />
           ) : module === "cameras" ? (
             <CameraGrid />
           ) : module === "incidents" ? (
-            <IncidentBoard operatorBadge={badge} />
+            <IncidentBoard operatorBadge={badge} canExport={isSupervisor} />
           ) : module === "analytics" ? (
             <AnalyticsDashboard />
+          ) : module === "audit" && isSupervisor ? (
+            <AuditLog />
+          ) : module === "compliance" ? (
+            <Compliance isSupervisor={isSupervisor} isAdmin={isAdmin} />
           ) : (
-            <ScanHistory />
+            <ScanHistory canExport={isSupervisor} />
           )}
 
 
